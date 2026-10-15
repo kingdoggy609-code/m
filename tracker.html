@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Время проекта</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Onest:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f1eef2;--surface:#fff;--ink:#1c1722;--muted:#6f6578;--line:#ddd5e2;--red:#d4142c;--on-red:#fff;--cell:#e6dfea;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0a14;--surface:#171120;--ink:#f4eef8;--muted:#9a8fa8;--line:#2a2136;--red:#ff2d45;--on-red:#fff;--cell:#241c30;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0a14;--surface:#171120;--ink:#f4eef8;--muted:#9a8fa8;--line:#2a2136;--red:#ff2d45;--on-red:#fff;--cell:#241c30;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Onest,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:480px;margin:0 auto;padding:18px 16px 40px}
+h1{font:700 22px/1.2 "Cormorant Garamond",Georgia,serif;letter-spacing:.04em;text-align:center;margin:6px 0 16px}
+h2{font:700 18px/1.2 "Cormorant Garamond",Georgia,serif;margin:22px 0 10px}
+button,input,select{font:inherit;color:inherit}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.clock{font:700 56px/1 "Cormorant Garamond",Georgia,serif;font-variant-numeric:tabular-nums;text-align:center;margin:4px 0 4px}
+.state{text-align:center;color:var(--muted);font-size:14px;margin-bottom:12px;min-height:1.4em}
+select,input[type=number],input[type=date]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.btn{width:100%;border:1px solid var(--line);background:var(--surface);padding:13px;border-radius:12px;font-weight:600;cursor:pointer;margin-top:10px}
+.btn.main{background:var(--red);border-color:var(--red);color:var(--on-red)}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font:700 22px "Cormorant Garamond",Georgia,serif}
+.stat span{font-size:12px;color:var(--muted)}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px;overflow-x:auto;padding-bottom:4px}
+.heat i{display:block;width:18px;height:18px;border-radius:4px;background:var(--cell)}
+.heat i.x{background:none}
+.bar{display:grid;grid-template-columns:78px 1fr 70px;gap:8px;align-items:center;font-size:14px;margin:6px 0}
+.bar div{height:10px;border-radius:5px;background:var(--cell);overflow:hidden}
+.bar div u{display:block;height:100%;background:var(--red);text-decoration:none}
+.bar span:last-child{text-align:right;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .main{flex:1;min-width:0}
+.row b{font-weight:600}
+.row small{display:block;color:var(--muted);font-size:13px}
+.row button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:6px}
+.empty{color:var(--muted);text-align:center;padding:8px 0;margin:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+.note{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0;min-height:1.3em}
+details summary{cursor:pointer;font-weight:500}
+</style>
+</head>
+<body>
+<main>
+<h1>Время проекта</h1>
+
+<section class="card">
+  <div class="clock" id="clock">00:00:00</div>
+  <div class="state" id="state">Над чем работаешь?</div>
+  <label for="cat">Раздел</label>
+  <select id="cat"></select>
+  <button class="btn main" id="go">Начать работу</button>
+</section>
+
+<div class="stats">
+  <div class="stat"><b id="sAll">0 мин</b><span>всего на проект</span></div>
+  <div class="stat"><b id="sToday">0 мин</b><span>сегодня</span></div>
+  <div class="stat"><b id="sWeek">0 мин</b><span>за 7 дней</span></div>
+  <div class="stat"><b id="sDays">0</b><span>рабочих дней</span></div>
+</div>
+
+<h2>Календарь работы</h2>
+<div class="card"><div class="heat" id="heat" aria-label="Календарь работы за 14 недель"></div></div>
+
+<h2>По разделам</h2>
+<div class="card" id="cats"></div>
+
+<h2>Журнал</h2>
+<div class="card" id="log"></div>
+
+<h2>Добавить вручную</h2>
+<details class="card">
+  <summary>Записать время, которое было раньше</summary>
+  <div class="grid2">
+    <div><label for="mDate">Дата</label><input type="date" id="mDate"></div>
+    <div><label for="mMin">Минут</label><input type="number" id="mMin" min="1" max="1440" value="60"></div>
+  </div>
+  <div style="margin-top:10px"><label for="mCat">Раздел</label><select id="mCat"></select></div>
+  <button class="btn" id="mAdd">Добавить</button>
+</details>
+
+<button class="btn" id="copy">Скопировать журнал</button>
+<p class="note" id="note"></p>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const CATS=['Код','Рендеры','Музыка','Звуки','Баги','Другое'];
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let sessions=load('sessions',[]),run=load('run',null),ticker=null;
+
+const pad=n=>String(n).padStart(2,'0');
+const key=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const dur=s=>{s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+' ч '+m+' мин':(m||s<60&&s>0?m:0)+' мин'};
+const clk=s=>pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60);
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const secOf=x=>(x.end-x.start)/1000;
+const dayLabel=t=>new Date(t).toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'});
+
+CATS.forEach(c=>{['cat','mCat'].forEach(id=>{const o=document.createElement('option');o.textContent=c;$('#'+id).appendChild(o)})});
+$('#mDate').value=key(Date.now());
+if(run)$('#cat').value=run.cat;
+
+function byDay(){const m={};sessions.forEach(s=>{const k=key(s.start);m[k]=(m[k]||0)+secOf(s)});return m}
+
+function renderStats(){
+  const m=byDay(),now=Date.now();
+  const all=sessions.reduce((a,s)=>a+secOf(s),0);
+  let week=0;for(let i=0;i<7;i++)week+=m[key(now-i*864e5)]||0;
+  $('#sAll').textContent=dur(all);
+  $('#sToday').textContent=dur(m[key(now)]||0);
+  $('#sWeek').textContent=dur(week);
+  $('#sDays').textContent=Object.keys(m).length;
+}
+function renderHeat(){
+  const m=byDay(),el=$('#heat');el.innerHTML='';
+  const today=new Date();today.setHours(12,0,0,0);
+  const dow=(today.getDay()+6)%7;
+  const start=new Date(today);start.setDate(start.getDate()-dow-13*7);
+  const max=Math.max(1,...Object.values(m));
+  for(let i=0;i<14*7;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);
+    const c=document.createElement('i');
+    if(d>today){c.className='x'}
+    else{
+      const k=key(d),v=m[k]||0;
+      c.title=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})+': '+(v?dur(v):'нет работы');
+      if(v){c.style.background='var(--red)';c.style.opacity=(.3+.7*v/max).toFixed(2)}
+    }
+    el.appendChild(c);
+  }
+  el.scrollLeft=el.scrollWidth;
+}
+function renderCats(){
+  const t={};CATS.forEach(c=>t[c]=0);
+  sessions.forEach(s=>{t[s.cat]=(t[s.cat]||0)+secOf(s)});
+  const max=Math.max(1,...Object.values(t));
+  $('#cats').innerHTML=Object.keys(t).map(c=>`<div class="bar"><span>${c}</span><div><u style="width:${t[c]/max*100}%"></u></div><span>${dur(t[c])}</span></div>`).join('');
+}
+function renderLog(){
+  const el=$('#log');
+  if(!sessions.length){el.innerHTML='<p class="empty">Пока пусто. Нажми «Начать работу».</p>';return}
+  const list=[...sessions].sort((a,b)=>b.start-a.start).slice(0,40);
+  el.innerHTML=list.map(s=>`<div class="row"><div class="main"><b>${dur(secOf(s))} · ${s.cat}</b><small>${dayLabel(s.start)}${s.manual?' · вручную':', '+hm(s.start)+'–'+hm(s.end)}</small></div><button data-id="${s.id}" aria-label="Удалить запись">×</button></div>`).join('');
+}
+function renderAll(){renderStats();renderHeat();renderCats();renderLog()}
+
+function paint(){
+  if(!run){$('#clock').textContent='00:00:00';return}
+  $('#clock').textContent=clk(Math.floor((Date.now()-run.start)/1000));
+}
+function setUI(){
+  const on=!!run;
+  $('#go').textContent=on?'Закончить работу':'Начать работу';
+  $('#go').classList.toggle('main',!on);
+  $('#cat').disabled=on;
+  $('#state').textContent=on?run.cat+' · начато в '+hm(run.start):'Над чем работаешь?';
+  clearInterval(ticker);if(on)ticker=setInterval(paint,500);
+  paint();
+}
+$('#go').addEventListener('click',()=>{
+  if(!run){run={start:Date.now(),cat:$('#cat').value};save('run',run)}
+  else{
+    const end=Date.now();
+    if(end-run.start>=10000){sessions.push({id:end,start:run.start,end,cat:run.cat});save('sessions',sessions)}
+    run=null;save('run',null);renderAll();
+  }
+  setUI();
+});
+$('#log').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(!confirm('Удалить эту запись?'))return;
+  sessions=sessions.filter(s=>String(s.id)!==b.dataset.id);save('sessions',sessions);renderAll();
+});
+$('#mAdd').addEventListener('click',()=>{
+  const d=$('#mDate').value,min=Math.round(+$('#mMin').value);
+  if(!d||!(min>0)){$('#note').textContent='Укажи дату и минуты.';return}
+  const[y,mo,da]=d.split('-').map(Number),start=new Date(y,mo-1,da,12,0,0).getTime();
+  sessions.push({id:Date.now(),start,end:start+min*60000,cat:$('#mCat').value,manual:true});
+  save('sessions',sessions);renderAll();$('#note').textContent='Добавлено: '+dur(min*60)+'.';
+});
+$('#copy').addEventListener('click',async()=>{
+  const all=sessions.reduce((a,s)=>a+secOf(s),0);
+  const lines=[...sessions].sort((a,b)=>a.start-b.start).map(s=>key(s.start)+(s.manual?'':' '+hm(s.start)+'-'+hm(s.end))+' | '+s.cat+' | '+dur(secOf(s)));
+  const txt='Moonlight Secrets: всего '+dur(all)+'\n'+lines.join('\n');
+  try{await navigator.clipboard.writeText(txt);$('#note').textContent='Журнал скопирован.'}
+  catch(e){$('#note').textContent='Не удалось скопировать: браузер не разрешил доступ к буферу.'}
+});
+document.addEventListener('visibilitychange',paint);
+renderAll();setUI();
+</script>
+</body>
+</html>

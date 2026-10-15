@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Moonlight Work</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0d0a14">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+html,body{height:100%;margin:0;background:#0d0a14;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+iframe{flex:1;border:0;width:100%;min-height:0;background:transparent}
+nav{display:flex;border-top:1px solid #2a2136;background:#171120;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;background:none;color:#9a8fa8;padding:14px 8px;font:600 15px system-ui,sans-serif;cursor:pointer}
+nav button[aria-selected=true]{color:#ff2d45}
+nav button:focus-visible{outline:3px solid #ff2d45;outline-offset:-3px}
+[hidden]{display:none!important}
+@media (prefers-color-scheme:light){html,body{background:#f1eef2}nav{background:#fff;border-color:#ddd5e2}nav button{color:#6f6578}nav button[aria-selected=true]{color:#d4142c}}
+#streak{flex:none;margin:0;padding:10px 14px;text-align:center;font:600 14px system-ui,sans-serif;color:#f4eef8;background:#171120;border-bottom:1px solid #2a2136;cursor:pointer}
+#streak.warn{color:#ff2d45}
+@media (prefers-color-scheme:light){#streak{color:#1c1722;background:#fff;border-color:#ddd5e2}#streak.warn{color:#d4142c}}
+</style></head>
+<body>
+<div id="streak" role="button" tabindex="0" aria-live="polite"></div>
+<iframe id="timer" src="timer.html" title="Таймер"></iframe>
+<iframe id="tracker" src="tracker.html" title="Учёт времени" hidden></iframe>
+<nav>
+<button data-t="timer" aria-selected="true">Таймер</button>
+<button data-t="tracker" aria-selected="false">Учёт времени</button>
+</nav>
+<script>
+function show(t){document.querySelectorAll('iframe').forEach(f=>f.hidden=f.id!==t);
+document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
+try{localStorage.setItem('tab',t)}catch(e){}
+paintStreak()}
+function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function p2(n){return String(n).padStart(2,'0')}
+function dk(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
+function streak(){
+const goal=ld('goalMin',30)*60,m={};
+ld('sessions',[]).forEach(s=>{const k=dk(new Date(s.start));m[k]=(m[k]||0)+(s.end-s.start)/1000});
+const r=ld('run',null);if(r){const k=dk(new Date(r.start));m[k]=(m[k]||0)+(Date.now()-r.start)/1000}
+const st=ld('stats',{days:{}}).days||{};
+for(const k in st){const[y,mo,d]=k.split('-').map(Number);const n=dk(new Date(y,mo-1,d));m[n]=(m[n]||0)+(st[k].sec||0)}
+const ok=k=>(m[k]||0)>=goal;
+const t=new Date();t.setHours(12,0,0,0);const td=dk(t);
+let cur=0;const d=new Date(t);if(!ok(td))d.setDate(d.getDate()-1);
+while(ok(dk(d))){cur++;d.setDate(d.getDate()-1)}
+let best=0,run=0,prev=null;
+Object.keys(m).filter(ok).sort().forEach(k=>{const[y,mo,dd]=k.split('-').map(Number);const dt=new Date(y,mo-1,dd,12);
+run=prev&&Math.round((dt-prev)/864e5)===1?run+1:1;prev=dt;best=Math.max(best,run)});
+best=Math.max(best,cur,ld('bestStreak',0));try{localStorage.setItem('bestStreak',best)}catch(e){}
+return{cur,best,min:Math.floor((m[td]||0)/60),goal:goal/60,done:ok(td)}}
+function paintStreak(){const s=streak(),el=document.getElementById('streak');
+el.textContent=(s.cur?'🔥 ':'')+s.cur+' дн. подряд · рекорд '+s.best+' · '+(s.done?'сегодня засчитано ✓':'сегодня '+s.min+'/'+s.goal+' мин');
+el.classList.toggle('warn',!s.done&&s.cur>0);
+el.title=!s.done&&s.cur>0?'Серия сгорит, если сегодня не поработать':'Нажми, чтобы изменить минимум в день'}
+document.getElementById('streak').addEventListener('click',()=>{const v=parseInt(prompt('Минимум минут в день, чтобы день засчитался в серию:',ld('goalMin',30)));
+if(v>0&&v<=600){try{localStorage.setItem('goalMin',v)}catch(e){}paintStreak()}});
+addEventListener('message',e=>{if(e.origin===location.origin&&e.data==='mw-alarm')show('timer')});
+document.addEventListener('visibilitychange',paintStreak);setInterval(paintStreak,5000);paintStreak();
+document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)show(b.dataset.t)});
+try{const t=localStorage.getItem('tab');if(t==='tracker')show(t)}catch(e){}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>

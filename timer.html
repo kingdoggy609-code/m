@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Лунный таймер</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Onest:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f1eef2;--surface:#ffffff;--ink:#1c1722;--muted:#6f6578;--line:#ddd5e2;--red:#d4142c;--on-red:#fff;--ring:#e4dbe8;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0a14;--surface:#171120;--ink:#f4eef8;--muted:#9a8fa8;--line:#2a2136;--red:#ff2d45;--on-red:#fff;--ring:#2a2136;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0a14;--surface:#171120;--ink:#f4eef8;--muted:#9a8fa8;--line:#2a2136;--red:#ff2d45;--on-red:#fff;--ring:#2a2136;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Onest,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:460px;margin:0 auto;padding:18px 16px 40px}
+h1{font:700 22px/1.2 "Cormorant Garamond",Georgia,serif;letter-spacing:.04em;text-align:center;margin:6px 0 16px}
+button,input{font:inherit;color:inherit}
+.modes{display:flex;gap:6px;margin-bottom:12px}
+.modes button{flex:1;border:1px solid var(--line);background:var(--surface);padding:9px 4px;border-radius:12px;cursor:pointer;color:var(--muted);font-weight:500;font-size:14px}
+.modes button[aria-pressed=true]{border-color:var(--red);color:var(--red);font-weight:600}
+.dial{position:relative;width:min(100%,320px);margin:8px auto 14px;aspect-ratio:1}
+.dial svg{width:100%;height:100%;display:block}
+.time{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.time b{font:700 64px/1 "Cormorant Garamond",Georgia,serif;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.time span{color:var(--muted);font-size:14px;margin-top:6px}
+.task{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:12px}
+.ctl{display:flex;gap:8px;margin-bottom:18px}
+.btn{flex:1;border:1px solid var(--line);background:var(--surface);padding:13px;border-radius:12px;font-weight:600;cursor:pointer}
+.btn.main{flex:2;background:var(--red);border-color:var(--red);color:var(--on-red)}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.stat b{display:block;font:700 24px "Cormorant Garamond",Georgia,serif}
+.stat span{font-size:12px;color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+summary{cursor:pointer;font-weight:500}
+.set{display:grid;grid-template-columns:1fr 80px;gap:10px;align-items:center;margin-top:10px}
+.set input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.log{font-size:14px;color:var(--muted);margin:10px 0 0;text-align:center;min-height:1.4em}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px;margin-top:10px;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.alarm{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(13,10,20,.94);text-align:center;padding:24px}
+.alarm b{display:block;font:700 34px/1.2 "Cormorant Garamond",Georgia,serif;color:#fff;margin-bottom:8px}
+.alarm p{color:#cfc6da;margin:0 0 20px}
+.alarm .btn{min-width:200px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>Лунный таймер</h1>
+<div class="modes" id="modes">
+  <button data-m="work" aria-pressed="true">Работа</button>
+  <button data-m="short" aria-pressed="false">Перерыв</button>
+  <button data-m="long" aria-pressed="false">Длинный</button>
+</div>
+
+<div class="dial">
+  <svg viewBox="0 0 320 320" aria-hidden="true">
+    <circle cx="160" cy="160" r="144" fill="none" stroke="var(--ring)" stroke-width="8"/>
+    <circle id="arc" cx="160" cy="160" r="144" fill="none" stroke="var(--red)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 160 160)" stroke-dasharray="904.8" stroke-dashoffset="0"/>
+    <defs><mask id="cres"><rect width="320" height="320" fill="#fff"/><circle id="bite" cx="196" cy="128" r="42" fill="#000"/></mask></defs>
+    <circle cx="160" cy="112" r="34" fill="var(--red)" opacity=".9" mask="url(#cres)" transform="translate(0 -4)"/>
+  </svg>
+  <div class="time"><b id="clock">25:00</b><span id="label">Работа</span></div>
+</div>
+
+<input class="task" id="task" placeholder="Над чем работаешь? Например: сцена 3, рендеры" maxlength="80" aria-label="Задача">
+
+<div class="ctl">
+  <button class="btn" id="reset">Сброс</button>
+  <button class="btn main" id="go">Старт</button>
+  <button class="btn" id="skip">Пропуск</button>
+</div>
+
+<div class="stats">
+  <div class="stat"><b id="tn">0</b><span>циклов сегодня</span></div>
+  <div class="stat"><b id="tm">0</b><span>минут сегодня</span></div>
+  <div class="stat"><b id="tt">0</b><span>часов всего</span></div>
+</div>
+
+<details>
+  <summary>Настройки времени</summary>
+  <div class="set"><label for="s-work">Работа, минут</label><input type="number" id="s-work" min="1" max="180"></div>
+  <div class="set"><label for="s-short">Перерыв, минут</label><input type="number" id="s-short" min="1" max="60"></div>
+  <div class="set"><label for="s-long">Длинный перерыв, минут</label><input type="number" id="s-long" min="1" max="90"></div>
+</details>
+<p class="log" id="log"></p>
+<div style="text-align:center"><button class="link" id="wipe">Обнулить статистику</button></div>
+</main>
+<div id="alarm" class="alarm" role="alertdialog" aria-labelledby="al-t" hidden><div><b id="al-t"></b><p id="al-d"></p><button class="btn main" id="al-x">Стоп</button></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const NAMES={work:'Работа',short:'Перерыв',long:'Длинный перерыв'};
+const C=2*Math.PI*144;
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+let cfg=load('cfg',{work:25,short:5,long:15});
+let stats=load('stats',{days:{},totalSec:0});
+let mode='work',cycle=0,running=false,endAt=0,runStart=0,remMs=cfg.work*60000,timer=null,actx=null;
+
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+function day(){return stats.days[today()]||(stats.days[today()]={n:0,sec:0})}
+function addWork(sec){if(sec<=0)return;day().sec+=sec;stats.totalSec+=sec;save('stats',stats);renderStats()}
+
+function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function render(){
+  $('#clock').textContent=fmt(remMs);
+  $('#label').textContent=NAMES[mode]+(running?'':' · пауза');
+  const total=cfg[mode]*60000;
+  $('#arc').style.strokeDashoffset=(C*(1-remMs/total)).toFixed(1);
+  $('#go').textContent=running?'Пауза':'Старт';
+  document.title=(running?fmt(remMs)+' · ':'')+'Лунный таймер';
+  document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===mode));
+}
+function renderStats(){
+  const d=day();
+  $('#tn').textContent=d.n;
+  $('#tm').textContent=Math.round(d.sec/60);
+  $('#tt').textContent=(stats.totalSec/3600).toFixed(1);
+}
+function beep(){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    [0,.25,.5].forEach((t,i)=>{
+      const o=actx.createOscillator(),g=actx.createGain();
+      o.frequency.value=[660,880,1100][i];o.connect(g);g.connect(actx.destination);
+      g.gain.setValueAtTime(.0001,actx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(.25,actx.currentTime+t+.03);
+      g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+t+.22);
+      o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.25);
+    });
+  }catch(e){}
+}
+function setMode(m){
+  stop();mode=m;remMs=cfg[m]*60000;render();
+}
+function start(){
+  if(running)return;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume()}catch(e){}
+  askNotif();lock();running=true;endAt=Date.now()+remMs;runStart=Date.now();
+  timer=setInterval(tick,250);render();
+}
+function stop(){
+  if(!running)return;
+  running=false;clearInterval(timer);unlock();
+  remMs=Math.max(0,endAt-Date.now());
+  if(mode==='work')addWork(Math.round((Date.now()-runStart)/1000));
+  render();
+}
+function tick(){
+  remMs=endAt-Date.now();
+  if(remMs<=0){finish();return}
+  render();
+}
+function finish(){
+  const was=mode;clearInterval(timer);running=false;
+  if(mode==='work'){
+    addWork(Math.round((Date.now()-runStart)/1000));
+    day().n++;cycle++;save('stats',stats);renderStats();
+    const t=$('#task').value.trim();
+    $('#log').textContent='Цикл готов'+(t?': '+t:'')+'. Время отдохнуть.';
+    mode=cycle%4===0?'long':'short';
+  }else{
+    $('#log').textContent='Перерыв закончился. Продолжаем работу.';
+    mode='work';
+  }
+  remMs=cfg[mode]*60000;unlock();render();
+  alarmOn(was==='work'?cfg.work+' минут прошли!':'Перерыв закончился',was==='work'?'Пора отдохнуть.':'Продолжаем работу.');
+}
+
+let wl=null,alarmT=null;
+async function lock(){try{if(navigator.wakeLock&&!wl){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}}catch(e){}}
+function unlock(){try{wl&&wl.release()}catch(e){}wl=null}
+function askNotif(){try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}}
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function alarmOn(title,text){
+  alarmOff();
+  $('#al-t').textContent=title;$('#al-d').textContent=text;$('#alarm').hidden=false;
+  try{parent.postMessage('mw-alarm',location.origin)}catch(e){}
+  let n=0;beep();vib([400,200,400,200,400]);
+  alarmT=setInterval(()=>{beep();vib([400,200,400]);if(++n>=40)alarmOff()},1500);
+  try{if('Notification' in window&&Notification.permission==='granted'){
+    navigator.serviceWorker.ready.then(r=>r.showNotification(title,{body:text,tag:'mw-alarm',requireInteraction:true,vibrate:[300,150,300]})).catch(()=>{})}}catch(e){}
+}
+function alarmOff(){clearInterval(alarmT);alarmT=null;$('#alarm').hidden=true;vib(0)}
+$('#al-x').addEventListener('click',alarmOff);
+$('#go').addEventListener('click',()=>running?stop():start());
+$('#reset').addEventListener('click',()=>{stop();remMs=cfg[mode]*60000;render()});
+$('#skip').addEventListener('click',()=>{
+  stop();mode=mode==='work'?'short':'work';remMs=cfg[mode]*60000;render();
+});
+$('#modes').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.m)});
+['work','short','long'].forEach(k=>{
+  const el=$('#s-'+k);el.value=cfg[k];
+  el.addEventListener('change',()=>{
+    const v=Math.min(+el.max,Math.max(1,Math.round(+el.value||cfg[k])));
+    el.value=v;cfg[k]=v;save('cfg',cfg);
+    if(!running&&mode===k){remMs=v*60000;render()}
+  });
+});
+$('#task').value=load('task','');
+$('#task').addEventListener('input',e=>save('task',e.target.value));
+$('#wipe').addEventListener('click',()=>{
+  if(!confirm('Обнулить всю статистику?'))return;
+  stats={days:{},totalSec:0};save('stats',stats);renderStats();
+});
+document.addEventListener('visibilitychange',()=>{if(running){tick();lock()}});
+render();renderStats();
+</script>
+</body>
+</html>
